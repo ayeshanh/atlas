@@ -26,7 +26,7 @@ namespace pegasus
             stf_writer_.setTraceFeature(stf::TRACE_FEATURES::STF_CONTAIN_RV64);
         }
 
-        // Is there a parameter for the user to enable page tables and physical memory tracing?
+        // TODO: Add support for PTE
         stf_writer_.setTraceFeature(stf::TRACE_FEATURES::STF_CONTAIN_PTE);
 
         stf_writer_.setISA(stf::ISA::RISCV);
@@ -38,64 +38,11 @@ namespace pegasus
     // METHODS
     void STFLogger::postExecute_(PegasusState* state)
     {
-        STF_DLOG("Executing postExecute");
-        if (fault_cause_.isValid() || interrupt_cause_.isValid())
-        {
-            std::vector<uint64_t> content;
-            // Do not write instruction record if there is a fault or interrupt
-            if(fault_cause_.isValid())
-            {
-                if (fault_cause_.getValue() == FaultCause::ILLEGAL_INST)
-                {
-                    stf_writer_ << stf::EventRecord(stf::EventRecord::TYPE::ILLEGAL_INST, {READ_CSR_REG<uint64_t>(state, MEPC), READ_CSR_REG<uint64_t>(state, MTVAL), stf::INST_IEM::STF_INST_IEM_RV64});
-                    stf_writer_ << stf::EventPCTargetRecord(READ_CSR_REG<uint64_t>(state, MTVEC));
-                }
-                else if (false)
-                {
-                    switch(fault_cause_.getValue())
-                    {
-                        STF_DLOG("in postExecute_() with fault cause: " << fault_cause_.getValue());
-                        case FaultCause::INST_ADDR_MISALIGNED:
-                            break;
-                        case FaultCause::INST_ACCESS: //INST_ADDR_FAULT WORK ON
-                            break;
-                        case FaultCause::ILLEGAL_INST:
-                            stf_writer_ << stf::EventRecord(stf::EventRecord::TYPE::ILLEGAL_INST, READ_CSR_REG<uint64_t>(state, MTVAL));
-                            stf_writer_ << stf::EventPCTargetRecord(READ_CSR_REG<uint64_t>(state, MTVEC));
-                            break;
-                        case FaultCause::BREAKPOINT:
-                            break;
-                        case FaultCause::LOAD_ADDR_MISALIGNED:
-                            break;
-                        case FaultCause::LOAD_ACCESS:
-                        case FaultCause::STORE_AMO_ADDR_MISALIGNED: //STORE_ADDR_MISALIGN:
-                        case FaultCause::STORE_AMO_ACCESS: //STORE_ACCESS_FAULT:
-                        case FaultCause::USER_ECALL:
-                        case FaultCause::SUPERVISOR_ECALL:
-                        case FaultCause::MACHINE_ECALL:
-                            break;
-                        case FaultCause::INST_PAGE_FAULT:
-                        case FaultCause::LOAD_PAGE_FAULT:
-                        case FaultCause::STORE_AMO_PAGE_FAULT:
-                        default: 
-                            //sparta_assert(false, "Unhandled fault cause in exceptionCodeRecord");
-                            std::cout << "Skip" << std::endl;
-                    }
-                }
-            }
-            else if (interrupt_cause_.isValid())
-            { 
-                
-            }
-        }
-        else if (state->getNextPc() != state->getPrevPc() + state->getCurrentInst()->getOpcodeSize()) // branch and jumps
+        if (state->getNextPc() != state->getPrevPc() + state->getCurrentInst()->getOpcodeSize()) // branch and jumps
         {
             stf_writer_ << stf::InstPCTargetRecord(state->getNextPc());
         }
 
-        STF_DLOG("FINIISHED");
-
-        // What is the third parameter in InstMemAccessRecord (memory attributes)
         for (const auto & mem_write : mem_writes_)
         {
             stf_writer_ << stf::InstMemAccessRecord(mem_write.addr, mem_write.size, 0,
@@ -109,15 +56,6 @@ namespace pegasus
             stf_writer_ << stf::InstMemAccessRecord(mem_read.addr, mem_read.size, 0,
                                                    stf::INST_MEM_ACCESS::READ);
             stf_writer_ << stf::InstMemContentRecord(mem_read.value);
-        }
-
-        if (state->getCurrentInst()->getOpcodeSize() == 2)
-        {
-            stf_writer_ << stf::InstOpcode16Record(state->getCurrentInst()->getOpcode());
-        }
-        else
-        {
-            stf_writer_ << stf::InstOpcode32Record(state->getCurrentInst()->getOpcode());
         }
 
         for (const auto & src_reg : src_regs_)
@@ -184,6 +122,64 @@ namespace pegasus
             }
         }
 
+        if (fault_cause_.isValid() || interrupt_cause_.isValid())
+        {
+            std::vector<uint64_t> content;
+            // Do not write instruction record if there is a fault or interrupt
+            if(fault_cause_.isValid())
+            {
+                if (fault_cause_.getValue() == FaultCause::ILLEGAL_INST)
+                {
+                    stf_writer_ << stf::EventRecord(stf::EventRecord::TYPE::ILLEGAL_INST, {READ_CSR_REG<uint64_t>(state, MEPC), READ_CSR_REG<uint64_t>(state, MTVAL), stf::INST_IEM::STF_INST_IEM_RV64});
+                    stf_writer_ << stf::EventPCTargetRecord(READ_CSR_REG<uint64_t>(state, MTVEC));
+                }
+                else if (false)
+                {
+                    switch(fault_cause_.getValue())
+                    {
+                        STF_DLOG("in postExecute_() with fault cause: " << fault_cause_.getValue());
+                        case FaultCause::INST_ADDR_MISALIGNED:
+                            break;
+                        case FaultCause::INST_ACCESS: //INST_ADDR_FAULT WORK ON
+                            break;
+                        case FaultCause::ILLEGAL_INST:
+                            stf_writer_ << stf::EventRecord(stf::EventRecord::TYPE::ILLEGAL_INST, READ_CSR_REG<uint64_t>(state, MTVAL));
+                            stf_writer_ << stf::EventPCTargetRecord(READ_CSR_REG<uint64_t>(state, MTVEC));
+                            break;
+                        case FaultCause::BREAKPOINT:
+                            break;
+                        case FaultCause::LOAD_ADDR_MISALIGNED:
+                            break;
+                        case FaultCause::LOAD_ACCESS:
+                        case FaultCause::STORE_AMO_ADDR_MISALIGNED: //STORE_ADDR_MISALIGN:
+                        case FaultCause::STORE_AMO_ACCESS: //STORE_ACCESS_FAULT:
+                        case FaultCause::USER_ECALL:
+                        case FaultCause::SUPERVISOR_ECALL:
+                        case FaultCause::MACHINE_ECALL:
+                            break;
+                        case FaultCause::INST_PAGE_FAULT:
+                        case FaultCause::LOAD_PAGE_FAULT:
+                        case FaultCause::STORE_AMO_PAGE_FAULT:
+                        default: 
+                            //sparta_assert(false, "Unhandled fault cause in exceptionCodeRecord");
+                            std::cout << "Skip" << std::endl;
+                    }
+                }
+            }
+            else if (interrupt_cause_.isValid())
+            { 
+                // TODO: add support for interrupts
+            }
+        }
+
+        if (state->getCurrentInst()->getOpcodeSize() == 2)
+        {
+            stf_writer_ << stf::InstOpcode16Record(state->getCurrentInst()->getOpcode());
+        }
+        else
+        {
+            stf_writer_ << stf::InstOpcode32Record(state->getCurrentInst()->getOpcode());
+        }
     }
 
     void STFLogger::exceptionCodeRecord (PegasusState* state)
