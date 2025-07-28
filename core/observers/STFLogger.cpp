@@ -130,7 +130,7 @@ namespace pegasus
             {
                 if (fault_cause_.getValue() == FaultCause::ILLEGAL_INST)
                 {
-                    stf_writer_ << stf::EventRecord(stf::EventRecord::TYPE::ILLEGAL_INST, {READ_CSR_REG<uint64_t>(state, MEPC), READ_CSR_REG<uint64_t>(state, MTVAL), stf::INST_IEM::STF_INST_IEM_RV64});
+                    stf_writer_ << stf::EventRecord(stf::EventRecord::TYPE::ILLEGAL_INST, {READ_CSR_REG<uint64_t>(state, MEPC), READ_CSR_REG<uint64_t>(state, MTVAL)});
                     stf_writer_ << stf::EventPCTargetRecord(READ_CSR_REG<uint64_t>(state, MTVEC));
                 }
                 else if (false)
