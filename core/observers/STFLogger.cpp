@@ -124,8 +124,6 @@ namespace pegasus
 
         if (fault_cause_.isValid() || interrupt_cause_.isValid())
         {
-            std::vector<uint64_t> content;
-            // Do not write instruction record if there is a fault or interrupt
             if(fault_cause_.isValid())
             {
                 if (fault_cause_.getValue() == FaultCause::ILLEGAL_INST)
@@ -143,7 +141,7 @@ namespace pegasus
                         case FaultCause::INST_ACCESS: //INST_ADDR_FAULT WORK ON
                             break;
                         case FaultCause::ILLEGAL_INST:
-                            stf_writer_ << stf::EventRecord(stf::EventRecord::TYPE::ILLEGAL_INST, READ_CSR_REG<uint64_t>(state, MTVAL));
+                            stf_writer_ << stf::EventRecord(stf::EventRecord::TYPE::ILLEGAL_INST, {0xFFFFFFFF, 0xFFFFFFFF, 32});
                             stf_writer_ << stf::EventPCTargetRecord(READ_CSR_REG<uint64_t>(state, MTVEC));
                             break;
                         case FaultCause::BREAKPOINT:
