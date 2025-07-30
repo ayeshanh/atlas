@@ -3,15 +3,12 @@
 #include "core/PegasusState.hpp"
 #include "sparta/utils/LogUtils.hpp"
 
-#define STF_DLOG(msg) SPARTA_LOG(state->getDebugLogger(), msg); // include STFLogger in debug log 
-
 namespace pegasus
 {
     STFLogger::STFLogger(const uint32_t reg_width, uint64_t inital_pc, const std::string & filename,
                          PegasusState* state) :
         Observer((reg_width == 32) ? ObserverMode::RV32 : ObserverMode::RV64)
     {
-        // set up version and stf generation type
         stf_writer_.open(filename);
         stf_writer_.addTraceInfo(stf::TraceInfoRecord(stf::STF_GEN::STF_TRANSACTION_EXAMPLE, 0, 0,
                                                       0, "Trace from Pegasus"));
@@ -27,7 +24,7 @@ namespace pegasus
         }
 
         // TODO: Add support for PTE
-        stf_writer_.setTraceFeature(stf::TRACE_FEATURES::STF_CONTAIN_PTE);
+        // stf_writer_.setTraceFeature(stf::TRACE_FEATURES::STF_CONTAIN_PTE);
 
         stf_writer_.setISA(stf::ISA::RISCV);
         stf_writer_.setHeaderPC(inital_pc);
@@ -35,7 +32,6 @@ namespace pegasus
         recordRegState_(state);
     }
 
-    // METHODS
     void STFLogger::postExecute_(PegasusState* state)
     {
         if (state->getNextPc() != state->getPrevPc() + state->getCurrentInst()->getOpcodeSize())
@@ -109,6 +105,8 @@ namespace pegasus
             }
         }
 
+        if (fault_cause_.isValid() || interrupt_cause_.isValid()) { return; } // TODO: Add support for exceptions
+        
         if (state->getCurrentInst()->getOpcodeSize() == 2)
         {
             stf_writer_ << stf::InstOpcode16Record(state->getCurrentInst()->getOpcode());
