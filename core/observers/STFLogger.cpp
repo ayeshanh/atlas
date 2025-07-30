@@ -3,8 +3,6 @@
 #include "core/PegasusState.hpp"
 #include "sparta/utils/LogUtils.hpp"
 
-#define STF_DLOG(msg) SPARTA_LOG(state->getDebugLogger(), msg); // include STFLogger in debug log 
-
 namespace pegasus
 {
     STFLogger::STFLogger(const uint32_t reg_width, uint64_t inital_pc, const std::string & filename,
