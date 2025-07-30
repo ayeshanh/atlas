@@ -25,7 +25,7 @@ namespace pegasus
         }
 
         // TODO: Add support for PTE
-        stf_writer_.setTraceFeature(stf::TRACE_FEATURES::STF_CONTAIN_PTE);
+        // stf_writer_.setTraceFeature(stf::TRACE_FEATURES::STF_CONTAIN_PTE);
 
         stf_writer_.setISA(stf::ISA::RISCV);
         stf_writer_.setHeaderPC(inital_pc);
