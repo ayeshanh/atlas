@@ -9,7 +9,6 @@ namespace pegasus
                          PegasusState* state) :
         Observer((reg_width == 32) ? ObserverMode::RV32 : ObserverMode::RV64)
     {
-        // set up version and stf generation type
         stf_writer_.open(filename);
         stf_writer_.addTraceInfo(stf::TraceInfoRecord(stf::STF_GEN::STF_TRANSACTION_EXAMPLE, 0, 0,
                                                       0, "Trace from Pegasus"));
@@ -33,7 +32,6 @@ namespace pegasus
         recordRegState_(state);
     }
 
-    // METHODS
     void STFLogger::postExecute_(PegasusState* state)
     {
         if (state->getNextPc() != state->getPrevPc() + state->getCurrentInst()->getOpcodeSize())
@@ -107,6 +105,8 @@ namespace pegasus
             }
         }
 
+        if (fault_cause_.isValid() || interrupt_cause_.isValid()) { return; } // TODO: Add support for exceptions
+        
         if (state->getCurrentInst()->getOpcodeSize() == 2)
         {
             stf_writer_ << stf::InstOpcode16Record(state->getCurrentInst()->getOpcode());
