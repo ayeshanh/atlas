@@ -8,13 +8,21 @@ namespace pegasus
                          PegasusState* state) :
         Observer((reg_width == 32) ? ObserverMode::RV32 : ObserverMode::RV64)
     {
-        if (filename.find(".stf", filename.length() - 5) || filename.find(".zstf", filename.length() - 6) || filename.find(".STF", filename.length() - 5) || filename.find(".ZSTF", filename.length() - 6))
+        if (filename.find(".stf", filename.length() - 5)
+            || filename.find(".zstf", filename.length() - 6)
+            || filename.find(".STF", filename.length() - 5)
+            || filename.find(".ZSTF", filename.length() - 6))
         {
-            std::cout << "STF Trace filename inputted does not end with .stf or .zstf, appending .zstf to the filename." << std::endl;
-            filename += ".zstf";
+            std::cout << "STF Trace filename inputted does not end with .stf or .zstf, appending "
+                         ".zstf to the filename."
+                      << std::endl;
+            stf_writer_.open(filename + ".zstf");
+        }
+        else
+        {
+            stf_writer_.open(filename);
         }
 
-        stf_writer_.open(filename);
         stf_writer_.addTraceInfo(stf::TraceInfoRecord(stf::STF_GEN::STF_TRANSACTION_EXAMPLE, 0, 0,
                                                       0, "Trace from Pegasus"));
 
@@ -39,7 +47,25 @@ namespace pegasus
     // METHODS
     void STFLogger::postExecute_(PegasusState* state)
     {
-        if ()
+        if (state->getNextPc() != state->getPrevPc() + state->getCurrentInst()->getOpcodeSize())
+        {
+            stf_writer_ << stf::InstPCTargetRecord(state->getNextPc());
+        }
+
+        for (const auto & mem_write : mem_writes_)
+        {
+            stf_writer_ << stf::InstMemAccessRecord(mem_write.addr, mem_write.size, 0,
+                                                    stf::INST_MEM_ACCESS::WRITE);
+            stf_writer_ << stf::InstMemContentRecord(mem_write.value);
+        }
+
+        for (const auto & mem_read : mem_reads_)
+        {
+            stf_writer_ << stf::InstMemAccessRecord(mem_read.addr, mem_read.size, 0,
+                                                    stf::INST_MEM_ACCESS::READ);
+            stf_writer_ << stf::InstMemContentRecord(mem_read.value);
+        }
+
         for (const auto & src_reg : src_regs_)
         {
             switch (src_reg.reg_id.reg_type)
