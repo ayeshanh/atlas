@@ -8,7 +8,12 @@ namespace pegasus
                          PegasusState* state) :
         Observer((reg_width == 32) ? ObserverMode::RV32 : ObserverMode::RV64)
     {
-        // set up version and stf generation type
+        if (filename.find(".stf", filename.length() - 5) || filename.find(".zstf", filename.length() - 6) || filename.find(".STF", filename.length() - 5) || filename.find(".ZSTF", filename.length() - 6))
+        {
+            std::cout << "STF Trace filename inputted does not end with .stf or .zstf, appending .zstf to the filename." << std::endl;
+            filename += ".zstf";
+        }
+
         stf_writer_.open(filename);
         stf_writer_.addTraceInfo(stf::TraceInfoRecord(stf::STF_GEN::STF_TRANSACTION_EXAMPLE, 0, 0,
                                                       0, "Trace from Pegasus"));
@@ -34,11 +39,7 @@ namespace pegasus
     // METHODS
     void STFLogger::postExecute_(PegasusState* state)
     {
-        if (fault_cause_.isValid() || interrupt_cause_.isValid())
-        {
-            return;
-        }
-
+        if ()
         for (const auto & src_reg : src_regs_)
         {
             switch (src_reg.reg_id.reg_type)
@@ -91,6 +92,11 @@ namespace pegasus
                 default:
                     sparta_assert(false, "Invalid register type!");
             }
+        }
+
+        if (fault_cause_.isValid() || interrupt_cause_.isValid())
+        {
+            return;
         }
 
         if (state->getCurrentInst()->getOpcodeSize() == 2)
